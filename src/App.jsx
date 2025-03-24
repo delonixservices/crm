@@ -1,286 +1,192 @@
+// Keep these regular imports
+import React, { useContext, lazy, Suspense } from "react";
+import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-router-dom";
+import { AuthContext } from "./context/AuthContext";
+import { Outlet } from 'react-router-dom';
 import "./App.css";
-import { useState, useEffect, useCallback } from "react";
-import Personal from "./components/Personal.jsx";
-import Resume from "./components/Resume.jsx";
-import AddSection from "./components/buttons/AddSection.jsx";
-import Section from "./components/Section.jsx";
-import View from "./components/View.jsx";
+
+// Add a simple loading spinner
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-screen">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+  </div>
+);
+
+// Lazy imports
+const ItineraryApp = lazy(() => import("./components/ItineraryApp"));
+const ProposalsTable = lazy(() => import("./components/ProposalsTable"));
+const ProposalView = lazy(() => import("./components/ProposalView"));
+const LeadForm = lazy(() => import("./components/LeadForm"));
+const LeadTable = lazy(() => import("./components/LeadTable"));
+const LeadView = lazy(() => import("./components/LeadView"));
+const ProposalEdit = lazy(() => import("./components/ProposalEdit"));
+const Login = lazy(() => import("./components/Login"));
+const Register = lazy(() => import("./components/Register"));
+const ForgotPassword = lazy(() => import('./components/ForgotPassword'));
+const ResetPassword = lazy(() => import('./components/ResetPassword'));
+
+// Additional components for City management
+import CityForm from "./components/Config/CityForm";
+import CityList from "./components/Config/CityList";
+import CityDetail from "./components/Config/CityDetail";
+import EditCity from "./components/Config/EditCity";
+import Navbar from "./components/Config/Navbar2";
+
+// Create PrivateRoute component
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
 function App() {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [email, setEmail] = useState("");
-  const [number, setNumber] = useState("");
-  const [website, setWebsite] = useState("");
-  const [sections, setSections] = useState([]);
-  const [views, setViews] = useState([]);
-  const [experiences, setExperiences] = useState([
-    {
-      id: new Date().getTime(),
-      title: "",
-      company: "",
-      date: "",
-      location: "",
-      accomplishment1: "",
-      accomplishment2: "",
-      accomplishment3: "",
-    },
-  ]);
-
-  const [educations, setEducations] = useState([
-    {
-      id: new Date().getTime(),
-      school: "",
-      degree: "",
-      date: "",
-      location: "",
-      courseWork: "",
-    },
-  ]);
-
-  const [projects, setProjects] = useState([
-    {
-      id: new Date().getTime(),
-      projectTitle: "",
-      link: "",
-      description: "",
-      feat1: "",
-      feat2: "",
-      feat3: "",
-    },
-  ]);
-
-  const [certifications, setCertifications] = useState([
-    {
-      id: new Date().getTime(),
-      cert: "",
-      institue: "",
-      date: "",
-    },
-  ]);
-
-  const [skills, setSkills] = useState([
-    {
-      id: new Date().getTime(),
-      tech: "",
-      interests: "",
-    },
-  ]);
-
-  const updateState = useCallback((section, newState) => {
-    if (section === "Education") {
-      setEducations((prev) => [...prev, newState]);
-    }
-    if (section === "Experience") {
-      setExperiences((prev) => [...prev, newState]);
-    }
-    if (section === "Project") {
-      setProjects((prev) => [...prev, newState]);
-    }
-    if (section === "Certification") {
-      setCertifications((prev) => [...prev, newState]);
-    }
-    if (section === "Skills and Interests") {
-      setSkills((prev) => [...prev, newState]);
-    }
-  }, []);
-
-  const deleteForm = useCallback((id, section) => {
-    if (section === "Experience") {
-      setExperiences((prev) => prev.filter((sec) => sec.id !== id));
-    }
-    if (section === "Education") {
-      setEducations((prev) => prev.filter((sec) => sec.id !== id));
-    }
-    if (section === "Projects") {
-      setProjects((prev) => prev.filter((sec) => sec.id !== id));
-    }
-    if (section === "Certifications") {
-      setCertifications((prev) => prev.filter((sec) => sec.id !== id));
-    }
-    if (section === "SkillsInterests") {
-      setSkills((prev) => prev.filter((sec) => sec.id !== id));
-    }
-  }, []);
-
-  const updateForm = useCallback((field, value, section, forms, form) => {
-    if (section === "Experience") {
-      setExperiences((prev) =>
-        prev.map((sec) =>
-          sec.id === form.id ? { ...sec, [field]: value } : sec,
-        ),
-      );
-    }
-    if (section === "Education") {
-      setEducations((prev) =>
-        prev.map((sec) =>
-          sec.id === form.id ? { ...sec, [field]: value } : sec,
-        ),
-      );
-    }
-    if (section === "Projects") {
-      setProjects((prev) =>
-        prev.map((sec) =>
-          sec.id === form.id ? { ...sec, [field]: value } : sec,
-        ),
-      );
-    }
-    if (section === "Certifications") {
-      setCertifications((prev) =>
-        prev.map((sec) =>
-          sec.id === form.id ? { ...sec, [field]: value } : sec,
-        ),
-      );
-    }
-    if (section === "SkillsInterests") {
-      setSkills((prev) =>
-        prev.map((sec) =>
-          sec.id === form.id ? { ...sec, [field]: value } : sec,
-        ),
-      );
-    }
-  }, []);
-
-  const addSection = useCallback(
-    (section) => {
-      const newKey = new Date().getTime();
-      setSections((prevSections) => [
-        ...prevSections,
-        {
-          type: Section,
-          key: newKey,
-          props: {
-            section,
-            experiences,
-            educations,
-            projects,
-            certifications,
-            skills,
-            updateState,
-            deleteForm,
-            updateForm,
-          },
-        },
-      ]);
-
-      setViews((prevViews) => [
-        ...prevViews,
-        {
-          type: View,
-          key: newKey,
-          props: {
-            section,
-            experiences,
-            educations,
-            projects,
-            certifications,
-            skills,
-          },
-        },
-      ]);
-    },
-    [
-      experiences,
-      educations,
-      projects,
-      certifications,
-      skills,
-      updateState,
-      deleteForm,
-      updateForm,
-    ],
-  );
-
-  // Update view component
-  useEffect(() => {
-    setViews((prevViews) => {
-      const updatedViews = prevViews.map((view) => {
-        if (view.type === View) {
-          return {
-            ...view,
-            props: {
-              ...view.props,
-              section: view.props.section,
-              experiences,
-              educations,
-              projects,
-              certifications,
-              skills,
-            }, // Update with current experiences
-          };
-        }
-        return view;
-      });
-      return updatedViews;
-    });
-  }, [experiences, educations, projects, certifications, skills]);
-
-  // Update section component
-  useEffect(() => {
-    setSections((prevSections) =>
-      prevSections.map((section) => {
-        if (section.type === Section) {
-          return {
-            ...section,
-            props: {
-              ...section.props,
-              experiences,
-              educations,
-              projects,
-              certifications,
-              skills,
-              updateState,
-              deleteForm,
-              updateForm,
-            },
-          };
-        }
-        return section;
-      }),
-    );
-  }, [
-    experiences,
-    educations,
-    projects,
-    certifications,
-    skills,
-    updateState,
-    deleteForm,
-    updateForm,
-  ]);
+  const { isAuthenticated, user, logout } = useContext(AuthContext);
 
   return (
-    <>
-      <div className="formSection">
-        <Personal
-          name={name}
-          address={address}
-          email={email}
-          number={number}
-          website={website}
-          setName={setName}
-          setAddress={setAddress}
-          setEmail={setEmail}
-          setNumber={setNumber}
-          setWebsite={setWebsite}
-        />
-        {sections.map((section) => {
-          const SectionComponent = section.type;
-          return <SectionComponent key={section.key} {...section.props} />;
-        })}
-        <AddSection addSection={addSection} />
+    <Router>
+      <div className="App min-h-screen w-full bg-black text-white relative">
+        {/* Starry Background */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {Array.from({ length: 100 }).map((_, index) => {
+            const size = Math.random() * 2 + 1;
+            return (
+              <div
+                key={index}
+                className="absolute bg-white rounded-full opacity-70"
+                style={{
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  animation: `float ${Math.random() * 5 + 3}s ease-in-out infinite`,
+                }}
+              ></div>
+            );
+          })}
+        </div>
+
+        {/* Main Content */}
+        <div className="relative z-10 overflow-auto">
+          {isAuthenticated && (
+            <nav className="bg-black bg-opacity-80 py-4 shadow-md">
+              <div className="container mx-auto flex justify-between items-center">
+                <ul className="flex space-x-8">
+                  <li>
+                    <Link to="/" className="text-white hover:text-yellow-400 transition-colors">
+                      Add Lead
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/leads" className="text-white hover:text-yellow-400 transition-colors">
+                      Lead Management
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/itinerary" className="text-white hover:text-yellow-400 transition-colors">
+                      Itinerary
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/proposals" className="text-white hover:text-yellow-400 transition-colors">
+                      Proposals
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/config" className="text-white hover:text-yellow-400 transition-colors">
+                      Config
+                    </Link>
+                  </li>
+                </ul>
+                <div className="flex items-center space-x-4">
+                  {user && (
+                    <span className="text-yellow-400 mr-4">
+                      Welcome, {user.name}
+                    </span>
+                  )}
+                  <button
+                    onClick={logout}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </nav>
+          )}
+
+          <div className="container mx-auto p-4">
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route
+                  path="/login"
+                  element={!isAuthenticated ? <Login /> : <Navigate to="/" />}
+                />
+                <Route
+                  path="/register"
+                  element={!isAuthenticated ? <Register /> : <Navigate to="/" />}
+                />
+                <Route
+                  path="/forgot-password"
+                  element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/" />}
+                />
+                <Route
+                  path="/reset-password/:token"
+                  element={!isAuthenticated ? <ResetPassword /> : <Navigate to="/" />}
+                />
+
+                {/* Protected Routes */}
+                <Route path="/" element={
+                  <PrivateRoute>
+                    <LeadForm />
+                  </PrivateRoute>
+                } />
+                <Route path="/leads" element={
+                  <PrivateRoute>
+                    <LeadTable />
+                  </PrivateRoute>
+                } />
+                <Route path="/lead-details/:id" element={
+                  <PrivateRoute>
+                    <LeadView />
+                  </PrivateRoute>
+                } />
+                <Route path="/itinerary" element={
+                  <PrivateRoute>
+                    <ItineraryApp />
+                  </PrivateRoute>
+                } />
+                <Route path="/proposals" element={
+                  <PrivateRoute>
+                    <ProposalsTable />
+                  </PrivateRoute>
+                } />
+                <Route path="/proposal-view/:id" element={
+                  <PrivateRoute>
+                    <ProposalView />
+                  </PrivateRoute>
+                } />
+                <Route path="/proposals/edit/:id" element={
+                  <PrivateRoute>
+                    <ProposalEdit />
+                  </PrivateRoute>
+                } />
+
+                {/* Config Routes */}
+                <Route path="/config" element={<Navbar />}>
+  <Route index element={<CityForm />} />
+  <Route path="cities" element={<CityList />} />
+  <Route path="city/:id" element={<CityDetail />} />
+  <Route path="edit-city/:id" element={<EditCity />} />
+</Route>;
+                {/* Catch all redirect to login */}
+                <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </div>
       </div>
-      <div className="viewSection">
-        <Resume
-          name={name}
-          address={address}
-          email={email}
-          number={number}
-          website={website}
-          views={views}
-        />
-      </div>
-    </>
+    </Router>
   );
 }
+
 export default App;
